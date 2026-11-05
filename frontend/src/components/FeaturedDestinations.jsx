@@ -1,8 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import translations from "@/i18n/translations";
-import destinations from "@/data/destinations";
 import { toast } from "react-toastify";
 import {
   FiStar,
@@ -20,6 +19,8 @@ export default function FeaturedDestinations() {
   const { language } = useLanguage();
   const t = translations[language].featured;
 
+  const [destinations, setDestinations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [touchStartX, setTouchStartX] = useState(0);
@@ -28,10 +29,32 @@ export default function FeaturedDestinations() {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [savedPlans, setSavedPlans] = useState([]);
 
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL ||
+          (process.env.BACKEND_URL ? process.env.BACKEND_URL.replace(/\/$/, "") : "http://localhost:5000");
+        const res = await fetch(`${backendUrl}/destinations`);
+        if (res.ok) {
+          const data = await res.json();
+          setDestinations(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch destinations from server:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
+
   const cardsPerPage = 3;
-  const totalPages = Math.ceil(destinations.length / cardsPerPage);
+  const totalPages = Math.max(1, Math.ceil((destinations?.length || 0) / cardsPerPage));
 
   const getCurrentCards = () => {
+    if (!destinations || destinations.length === 0) return [];
     const start = currentPage * cardsPerPage;
     return destinations.slice(start, start + cardsPerPage);
   };
@@ -86,21 +109,23 @@ export default function FeaturedDestinations() {
   };
 
   const toggleSavePlan = (dest) => {
-    const isSaved = savedPlans.includes(dest.id);
+    const destId = dest._id || dest.id;
+    const isSaved = savedPlans.includes(destId);
+    const destName = typeof dest.name === "object" ? (dest.name?.[language] || dest.name?.en) : dest.name;
     if (isSaved) {
-      setSavedPlans(savedPlans.filter((id) => id !== dest.id));
+      setSavedPlans(savedPlans.filter((id) => id !== destId));
       toast.info(
         language === "en"
-          ? `Removed ${dest.name.en} from My Plan`
-          : `${dest.name.bn} প্ল্যান থেকে সরানো হয়েছে`,
+          ? `Removed ${destName} from My Plan`
+          : `${destName} প্ল্যান থেকে সরানো হয়েছে`,
         { autoClose: 1800 }
       );
     } else {
-      setSavedPlans([...savedPlans, dest.id]);
+      setSavedPlans([...savedPlans, destId]);
       toast.success(
         language === "en"
-          ? `Added ${dest.name.en} to My Plan!`
-          : `${dest.name.bn} ভ্রমণ তালিকায় যোগ হয়েছে!`,
+          ? `Added ${destName} to My Plan!`
+          : `${destName} ভ্রমণ তালিকায় যোগ হয়েছে!`,
         { autoClose: 1800 }
       );
     }
@@ -167,18 +192,43 @@ export default function FeaturedDestinations() {
               isAnimating ? "opacity-40 scale-[0.99]" : "opacity-100 scale-100"
             }`}
           >
-            {getCurrentCards().map((dest) => {
-              const isSaved = savedPlans.includes(dest.id);
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-base-100 dark:bg-base-200/40 rounded-2xl border border-base-300/70 p-4 animate-pulse h-[350px] flex flex-col justify-between"
+                >
+                  <div className="h-44 bg-base-300 rounded-xl mb-4"></div>
+                  <div className="space-y-2.5">
+                    <div className="h-4 bg-base-300 rounded w-2/3"></div>
+                    <div className="h-3 bg-base-300 rounded w-1/2"></div>
+                    <div className="h-3 bg-base-300 rounded w-full"></div>
+                  </div>
+                  <div className="pt-3 border-t border-base-300/60 flex items-center justify-between">
+                    <div className="h-3 bg-base-300 rounded w-1/4"></div>
+                    <div className="h-4 bg-base-300 rounded w-1/5"></div>
+                  </div>
+                </div>
+              ))
+            ) : getCurrentCards().length > 0 ? (
+              getCurrentCards().map((dest) => {
+              const destId = dest._id || dest.id;
+              const isSaved = savedPlans.includes(destId);
+              const displayName = typeof dest.name === "object" ? (dest.name?.[language] || dest.name?.en || "") : (dest.name || "");
+              const displayLocation = typeof dest.location === "object" ? (dest.location?.[language] || dest.location?.en || "") : (dest.location || "");
+              const displayDesc = typeof dest.description === "object" ? (dest.description?.[language] || dest.description?.en || "") : (dest.description || "");
+              const displayTag = typeof dest.tag === "object" ? (dest.tag?.[language] || dest.tag?.en || "") : (dest.tag || dest.category || (language === "en" ? "Popular" : "জনপ্রিয়"));
+
               return (
                 <div
-                  key={dest.id}
+                  key={destId}
                   className="group bg-base-100 dark:bg-base-200/40 rounded-2xl border border-base-300/70 overflow-hidden shadow hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
                 >
                   {/* Card Image */}
                   <div className="relative h-44 overflow-hidden bg-base-300">
                     <img
                       src={dest.image}
-                      alt={dest.name[language]}
+                      alt={displayName}
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -190,7 +240,7 @@ export default function FeaturedDestinations() {
                     {/* Top Tag Badges */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                       <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold text-white shadow-sm ${dest.badgeColor || "bg-emerald-600"}`}>
-                        {dest.tag[language]}
+                        {displayTag}
                       </span>
 
                       {/* Bookmark button */}
@@ -220,32 +270,32 @@ export default function FeaturedDestinations() {
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <h3 className="text-base font-bold tracking-tight text-base-content group-hover:text-emerald-600 transition-colors">
-                          {dest.name[language]}
+                          {displayName}
                         </h3>
                         {/* Rating */}
                         <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold text-[11px]">
                           <FiStar className="w-3 h-3 fill-current" />
-                          <span>{dest.rating}</span>
+                          <span>{dest.rating || "5.0"}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1 text-[11px] text-base-content/60 font-medium mb-2">
                         <FiMapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                        <span>{dest.location[language]}</span>
+                        <span>{displayLocation}</span>
                       </div>
 
                       <p className="text-xs text-base-content/70 leading-relaxed line-clamp-2">
-                        {dest.description[language]}
+                        {displayDesc}
                       </p>
                     </div>
 
                     {/* Action Footer */}
                     <div className="pt-2.5 border-t border-base-300/60 flex items-center justify-between">
                       <span className="text-[10px] text-base-content/50">
-                        ({dest.reviews.toLocaleString()} {language === "en" ? "reviews" : "মতামত"})
+                        ({dest.reviews ? dest.reviews.toLocaleString() : 0} {language === "en" ? "reviews" : "মতামত"})
                       </span>
                       <Link
-                        href={`/destinations?place=${dest.id}`}
+                        href={`/destinations?place=${destId}`}
                         className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 group/link"
                       >
                         <span>{t.explore}</span>
@@ -255,7 +305,12 @@ export default function FeaturedDestinations() {
                   </div>
                 </div>
               );
-            })}
+            })
+          ) : (
+            <div className="col-span-full text-center py-12 text-base-content/60 text-sm">
+              {language === "en" ? "No destinations found." : "কোন গন্তব্য পাওয়া যায়নি।"}
+            </div>
+          )}
           </div>
         </div>
 
