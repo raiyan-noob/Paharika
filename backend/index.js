@@ -31,11 +31,25 @@ app.get('/', (req, res) => {
 });
 
 // GET all destinations from MongoDB
-app.get('/destinations', async (req, res) => {
+app.get('/all-destination', async (req, res) => {
   try {
     const cursor = destinationCollection.find();
     const result = await cursor.toArray();
     res.send(result);
+  } catch (err) {
+    console.error("Error fetching destinations:", err);
+    res.status(500).json({ message: 'Error fetching destinations' });
+  }
+});
+
+app.get('/all-destination/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const destination = await destinationCollection.findOne({ _id: new ObjectId(id) });
+    if (!destination) {
+      return res.status(404).json({ message: 'Destination not found' });
+    }
+    res.send(destination);
   } catch (err) {
     console.error("Error fetching destinations:", err);
     res.status(500).json({ message: 'Error fetching destinations' });

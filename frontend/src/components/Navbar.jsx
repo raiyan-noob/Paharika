@@ -58,8 +58,13 @@ export default function Navbar() {
     { name: t.home, href: "/", icon: <FiCompass className="w-3.5 h-3.5" /> },
     {
       name: t.destinations,
-      href: "/destinations",
+      href: "/all-destination",
       icon: <FiMapPin className="w-3.5 h-3.5" />,
+    },
+    {
+      name: t.myDestination || (language === "bn" ? "আমার গন্তব্য" : "My Destination"),
+      href: "/my-destination",
+      icon: <GiMountainRoad className="w-3.5 h-3.5" />,
     },
     {
       name: t.myPlan,

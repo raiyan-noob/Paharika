@@ -35,7 +35,7 @@ export default function FeaturedDestinations() {
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
           (process.env.BACKEND_URL ? process.env.BACKEND_URL.replace(/\/$/, "") : "http://localhost:5000");
-        const res = await fetch(`${backendUrl}/destinations`);
+        const res = await fetch(`${backendUrl}/all-destination`);
         if (res.ok) {
           const data = await res.json();
           setDestinations(Array.isArray(data) ? data : []);
@@ -295,7 +295,7 @@ export default function FeaturedDestinations() {
                         ({dest.reviews ? dest.reviews.toLocaleString() : 0} {language === "en" ? "reviews" : "মতামত"})
                       </span>
                       <Link
-                        href={`/destinations?place=${destId}`}
+                        href={`/all-destination/${destId}`}
                         className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 group/link"
                       >
                         <span>{t.explore}</span>
@@ -333,7 +333,7 @@ export default function FeaturedDestinations() {
         {/* View All Button */}
         <div className="text-center mt-7">
           <Link
-            href="/destinations"
+            href="/all-destination"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-xs sm:text-sm"
           >
             <span>{t.viewMore}</span>

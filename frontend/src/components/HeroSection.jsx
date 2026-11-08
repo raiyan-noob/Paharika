@@ -92,7 +92,7 @@ export default function HeroSection() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
               <Link
-                href="/destinations"
+                href="/all-destination"
                 className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
               >
                 <span>{t.exploreCta}</span>
