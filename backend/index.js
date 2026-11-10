@@ -45,17 +45,25 @@ app.get('/all-destination', async (req, res) => {
 app.get('/all-destination/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const destination = await destinationCollection.findOne({ _id: new ObjectId(id) });
+    let query;
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { id: parseInt(id) || id };
+    }
+    let destination = await destinationCollection.findOne(query);
+    if (!destination) {
+      destination = await destinationCollection.findOne({ id: parseInt(id) || id });
+    }
     if (!destination) {
       return res.status(404).json({ message: 'Destination not found' });
     }
     res.send(destination);
   } catch (err) {
-    console.error("Error fetching destinations:", err);
-    res.status(500).json({ message: 'Error fetching destinations' });
+    console.error("Error fetching destination:", err);
+    res.status(500).json({ message: 'Error fetching destination' });
   }
 });
-
 
 // POST add a new destination into MongoDB
 app.post('/add-destination', async (req, res) => {
@@ -67,6 +75,47 @@ app.post('/add-destination', async (req, res) => {
   } catch (err) {
     console.error("Error adding destination:", err);
     res.status(500).send({ error: 'Failed to add destination' });
+  }
+});
+
+// PUT update a destination in MongoDB
+app.put('/all-destination/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = { ...req.body };
+    delete updatedData._id; // Exclude immutable _id
+
+    let query;
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { id: parseInt(id) || id };
+    }
+
+    const result = await destinationCollection.updateOne(query, { $set: updatedData });
+    res.send(result);
+  } catch (err) {
+    console.error("Error updating destination:", err);
+    res.status(500).json({ message: 'Error updating destination', error: err.message });
+  }
+});
+
+// DELETE a destination from MongoDB
+app.delete('/all-destination/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    let query;
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { id: parseInt(id) || id };
+    }
+
+    const result = await destinationCollection.deleteOne(query);
+    res.send(result);
+  } catch (err) {
+    console.error("Error deleting destination:", err);
+    res.status(500).json({ message: 'Error deleting destination', error: err.message });
   }
 });
 
